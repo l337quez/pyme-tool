@@ -2,6 +2,7 @@ import sys
 import csv
 from PySide2.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QTabWidget
 from PySide2.QtGui import QPixmap
+from PySide2.QtGui import QIcon
 import sqlite3
 from sale import SalesTab
 from inventory import InventoryTab
@@ -30,6 +31,8 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.sale_tab, 'Ventas')
 
         # ...
+        # Set the icon
+        app.setWindowIcon(QIcon('assets/pyme-tools-logo.png'))
 
     # ...
 

@@ -16,10 +16,23 @@ class SalesTab(QWidget):
         self.busqueda_input.textChanged.connect(self.mostrar_recomendaciones)
         layout_horizontal.addWidget(self.busqueda_input)
 
+
+        self.sellerName = QLineEdit()
+        self.sellerName.setPlaceholderText("Nombre del vendedor")
+        self.sellerName.textChanged.connect(self.mostrar_recomendaciones)
+        layout_horizontal.addWidget(self.sellerName)
+
+
+
         # Crear la pantalla de la calculadora
         self.pantalla = QLabel()
         self.pantalla.setStyleSheet("background-color: black; color: white;")
         layout_horizontal.addWidget(self.pantalla)
+
+        self.screenTitle = QLabel()
+        self.pantalla.setStyleSheet("background-color: black; color: white;")
+        self.screenTitle.setText("Calculadora         ")
+        layout_horizontal.addWidget(self.screenTitle)
 
         # Agregar el layout horizontal al layout principal
         layout.addLayout(layout_horizontal)

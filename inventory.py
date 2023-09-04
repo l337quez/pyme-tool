@@ -1,6 +1,6 @@
 import sys
 import csv
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QTabWidget, QHBoxLayout, QGridLayout
+from PySide2.QtWidgets import QWidget, QComboBox, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QTabWidget, QHBoxLayout, QGridLayout
 from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt
 import sqlite3
@@ -44,8 +44,11 @@ class InventoryTab(QWidget):
         main_layout = QVBoxLayout(self)
 
         # Layout para los elementos de entrada y botones
+        input_and_image = QHBoxLayout()
+        main_layout.addLayout(input_and_image)
+
         input_layout = QVBoxLayout()
-        main_layout.addLayout(input_layout)
+        input_and_image.addLayout(input_layout)
 
         # Crear campos de entrada de datos
         name_label = QLabel('Nombre del Producto:')
@@ -54,49 +57,63 @@ class InventoryTab(QWidget):
         self.quantity_input = QLineEdit()
         price_label = QLabel('Precio:')
         self.price_input = QLineEdit()
-        image_label = QLabel('Imagen:')
-        self.image_path_input = QLineEdit()
-        self.image_path_input.setReadOnly(True)
 
-        hlayout = QHBoxLayout()
-        input_layout.addLayout(hlayout)
-        sublayout = QGridLayout()
+        self.warehouse= QComboBox(self)
+        availableAt = QLabel('Disponible en:')
 
-        sublayout.addWidget(name_label, 0,0)
-        sublayout.addWidget(self.name_input, 1,0)
-        sublayout.addWidget(quantity_label, 2,0)
-        sublayout.addWidget(self.quantity_input, 3,0)
-        sublayout.addWidget(price_label, 4,0)
-        sublayout.addWidget(self.price_input, 5,0)
-        sublayout.addWidget(image_label, 6,0)
-        sublayout.addWidget(self.image_path_input, 7,0)
+        # Agregamos items
+        self.warehouse.addItem("tienda")
+        self.warehouse.addItem("deposito")
+        self.warehouse.addItem("tienda")
+        self.warehouse.setCurrentIndex(0)
+
+
+
+        input_layout.addWidget(name_label)
+        input_layout.addWidget(self.name_input)
+        input_layout.addWidget(quantity_label)
+        input_layout.addWidget(self.quantity_input)
+        input_layout.addWidget(price_label)
+        input_layout.addWidget(self.price_input)
+        input_layout.addWidget(availableAt)
+        input_layout.addWidget(self.warehouse)
+
+        image_layout = QHBoxLayout()
+        input_and_image.addLayout(image_layout)
+
+        #sublayout.addStretch(1)
         #sublayout.addStretch(2)
         #sublayout.addWidget(self.comercial_value_up,0,0) # object, row, column
         #sublayout.addWidget(self.comercial_value_down,1,0) # object, row, column
 
-        hlayout.addLayout(sublayout)
 
         # Botones de selección de imagen y agregar producto
-        button_layout = QHBoxLayout()
-        input_layout.addLayout(button_layout)
 
+        self.selected_image_label = QLabel()
+        self.selected_image_label.setFixedSize(200, 200)
+        self.selected_image_label.setAlignment(Qt.AlignCenter)
+        image_layout.addWidget(self.selected_image_label)
+
+        button_layout = QVBoxLayout()
+        image_layout.addLayout(button_layout)
         select_image_button = QPushButton('Seleccionar Imagen')
         select_image_button.clicked.connect(self.select_image)
         add_button = QPushButton('Agregar Producto')
         add_button.clicked.connect(self.add_product)
 
-        button_layout.addWidget(select_image_button)
-        button_layout.addWidget(add_button)
+        main_layout.addWidget(select_image_button)
+        main_layout.addWidget(add_button)
+
+
+
+
 
         # Layout para la visualización de la imagen seleccionada
         #image_layout = QHBoxLayout()
         #main_layout.addLayout(input_layout)
         #main_layout.addStretch(1)  # Agregar un stretch para que la tabla ocupe todo el espacio vertical disponible
 
-        self.selected_image_label = QLabel()
-        self.selected_image_label.setFixedSize(200, 200)
-        self.selected_image_label.setAlignment(Qt.AlignCenter)
-        sublayout.addWidget(self.selected_image_label, 0,1)
+
 
         # Crear tabla para mostrar los productos vendidos
         self.table = QTableWidget()
