@@ -126,8 +126,8 @@ class InventoryTab(QWidget):
 
         # Crear tabla para mostrar los productos inventario
         self.table = QTableWidget()
-        self.table.setColumnCount(5)  # Añadir una columna adicional para la imagen
-        self.table.setHorizontalHeaderLabels(['ID', 'Nombre', 'Cantidad', 'Precio', 'Imagen'])
+        self.table.setColumnCount(6)  # Añadir una columna adicional para la imagen
+        self.table.setHorizontalHeaderLabels(['ID', 'Nombre', 'Cantidad', 'Precio', 'Descuento', 'Imagen'])
 
         # Ajustar el tamaño de las columnas para que ocupen todo el espacio horizontal
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -165,6 +165,7 @@ class InventoryTab(QWidget):
         if file_dialog.exec_():
             selected_files = file_dialog.selectedFiles()
             image_path = selected_files[0]
+            print(image_path)
             self.image_path_input.setText(image_path)
             self.show_selected_image_label(image_path)
 
@@ -173,11 +174,14 @@ class InventoryTab(QWidget):
         name = self.name_input.text()
         quantity = self.quantity_input.text()
         price = self.price_input.text()
+        discount = 0
         image_path = self.image_path_input.text()
+        print("el path de la imagen")
+        print(image_path)
 
         # Insertar el producto en la base de datos
-        cursor.execute('INSERT INTO products (name, quantity, price, image_path) VALUES (?, ?, ?, ?)',
-                       (name, quantity, price, image_path))
+        cursor.execute('INSERT INTO products (name, quantity, price, discount, image_path) VALUES (?, ?, ?, ?, ?)',
+                       (name, quantity, price, discount, image_path))
         connection.commit()
 
         # Limpiar los campos de entrada de datos
@@ -191,18 +195,22 @@ class InventoryTab(QWidget):
 
     def show_selected_image(self, row, column):
         # Obtener la ruta de la imagen de la celda seleccionada
-        image_path = self.table.item(row, 4).text()
+        image_path = self.table.item(row, 5).text()
+        #image_path = self.table.item(row, 5)
+        print("image_path en show_selected_image")
+        print(image_path)
 
         # Mostrar la imagen en el QLabel
         pixmap = QPixmap(image_path)
         scaled_pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio)
         self.selected_image_label.setPixmap(scaled_pixmap)
+
 
     def show_selected_image_label(self, image_path):
-        # Mostrar la imagen en el QLabel
         pixmap = QPixmap(image_path)
         scaled_pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio)
         self.selected_image_label.setPixmap(scaled_pixmap)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

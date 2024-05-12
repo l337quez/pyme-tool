@@ -76,7 +76,7 @@ class SalesTab(QWidget):
         self.setLayout(layout)
 
         # Conexión a la base de datos
-        self.conexion_db = sqlite3.connect('inventory.db')
+        self.conexion_db = sqlite3.connect('pyme_tool_data_base.db')
         self.cursor = self.conexion_db.cursor()
 
     def mostrar_recomendaciones(self):
