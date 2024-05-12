@@ -6,12 +6,19 @@ from PySide2.QtCore import Qt
 import sqlite3
 
 # Crear la conexión a la base de datos SQLite
-connection = sqlite3.connect('inventory.db')
+connection = sqlite3.connect('pyme_tool_data_base.db')
 cursor = connection.cursor()
 
 # Crear la tabla de productos si no existe
 cursor.execute('''CREATE TABLE IF NOT EXISTS products
-                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, quantity INTEGER, price REAL, image_path TEXT)''')
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, quantity INTEGER, price REAL, discount REAL, image_path TEXT)''')
+
+# Crear la tabla de ventas si no existe
+cursor.execute('''CREATE TABLE IF NOT EXISTS sales
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT, buyer TEXT, seller TEXT, discount REAL, currency TEXT,
+                   product_id INTEGER,
+                   FOREIGN KEY (product_id) REFERENCES products (id))''')
+
 connection.commit()
 
 
@@ -42,6 +49,8 @@ class InventoryTab(QWidget):
         super().__init__()
 
         main_layout = QVBoxLayout(self)
+
+        self.image_path_input = QLineEdit()
 
         # Layout para los elementos de entrada y botones
         input_and_image = QHBoxLayout()
@@ -115,7 +124,7 @@ class InventoryTab(QWidget):
 
 
 
-        # Crear tabla para mostrar los productos vendidos
+        # Crear tabla para mostrar los productos inventario
         self.table = QTableWidget()
         self.table.setColumnCount(5)  # Añadir una columna adicional para la imagen
         self.table.setHorizontalHeaderLabels(['ID', 'Nombre', 'Cantidad', 'Precio', 'Imagen'])
@@ -145,6 +154,7 @@ class InventoryTab(QWidget):
             for column_number, data in enumerate(row_data):
 
                 item = QTableWidgetItem(str(data))
+                print("Se ha clickado en el item:", item.text())
                 self.table.setItem(row_number, column_number, item)
 
     def select_image(self):
@@ -156,6 +166,7 @@ class InventoryTab(QWidget):
             selected_files = file_dialog.selectedFiles()
             image_path = selected_files[0]
             self.image_path_input.setText(image_path)
+            self.show_selected_image_label(image_path)
 
     def add_product(self):
         # Obtener los datos del formulario
@@ -182,6 +193,12 @@ class InventoryTab(QWidget):
         # Obtener la ruta de la imagen de la celda seleccionada
         image_path = self.table.item(row, 4).text()
 
+        # Mostrar la imagen en el QLabel
+        pixmap = QPixmap(image_path)
+        scaled_pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio)
+        self.selected_image_label.setPixmap(scaled_pixmap)
+
+    def show_selected_image_label(self, image_path):
         # Mostrar la imagen en el QLabel
         pixmap = QPixmap(image_path)
         scaled_pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio)

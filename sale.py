@@ -1,74 +1,122 @@
 import sqlite3
-from PySide2.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QCompleter, QWidget, QHBoxLayout
+from PySide2.QtWidgets import (QVBoxLayout, QLabel, QLineEdit, QCompleter, QWidget, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QApplication )
+from PySide2.QtCore import (Qt, QObject, QEvent)
+
+class KeyPressEater(QObject):
+    def __init__(self, parent=None):
+        super(KeyPressEater, self).__init__(parent)
+        self.parent = parent
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Delete:
+            if isinstance(obj, QTableWidget):
+                current_index = obj.currentRow()
+                if current_index != -1:
+                    obj.removeRow(current_index)
+                    if self.parent:
+                        self.parent.calculateTotal()
+                    return True
+        return False
+
 
 class SalesTab(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Configuración del layout principal
         layout = QVBoxLayout()
 
-        # Crear el layout horizontal para el cuadro de búsqueda y la pantalla negra
-        layout_horizontal = QHBoxLayout()
+        # Botones principales en la parte superior
+        lh_main = QHBoxLayout()
+        buttons = [
+            QPushButton('Vendedores (F2)'), QPushButton('Clientes (F3)'),
+            QPushButton('Monedas (F4)'), QPushButton('Buscar Productos (F5)')
+        ]
+        for button in buttons:
+            lh_main.addWidget(button)
+            button.setStyleSheet("font-size: 14px; padding: 10px;")
+        layout.addLayout(lh_main)
 
-        # Crear la entrada de búsqueda de productos
+        # Sección de búsqueda y agregación de productos
+        layout_horizontal = QHBoxLayout()
         self.busqueda_input = QLineEdit()
         self.busqueda_input.setPlaceholderText("Ingrese el nombre del producto")
         self.busqueda_input.textChanged.connect(self.mostrar_recomendaciones)
         layout_horizontal.addWidget(self.busqueda_input)
 
+        self.addProductBtn = QPushButton('Agregar producto')
+        self.addProductBtn.clicked.connect(self.addProduct)
+        layout_horizontal.addWidget(self.addProductBtn)
 
         self.sellerName = QLineEdit()
         self.sellerName.setPlaceholderText("Nombre del vendedor")
-        self.sellerName.textChanged.connect(self.mostrar_recomendaciones)
         layout_horizontal.addWidget(self.sellerName)
-
-
-
-        # Crear la pantalla de la calculadora
-        self.pantalla = QLabel()
-        self.pantalla.setStyleSheet("background-color: black; color: white;")
-        layout_horizontal.addWidget(self.pantalla)
-
-        self.screenTitle = QLabel()
-        self.pantalla.setStyleSheet("background-color: black; color: white;")
-        self.screenTitle.setText("Calculadora         ")
-        layout_horizontal.addWidget(self.screenTitle)
-
-        # Agregar el layout horizontal al layout principal
         layout.addLayout(layout_horizontal)
 
-        # Crear el layout horizontal para el resultado de la búsqueda y el input de operaciones
-        layout_horizontal2 = QHBoxLayout()
+        # Configuración de la tabla para mostrar los productos
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(['Nombre', 'Cantidad', 'Precio'])
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SingleSelection)
+        layout.addWidget(self.table)
 
-        # Crear el label para mostrar el producto encontrado
-        self.producto_encontrado = QLabel()
-        layout_horizontal2.addWidget(self.producto_encontrado)
+        # Eliminar filas
+        self.keyPressEater = KeyPressEater(self)
+        self.table.installEventFilter(self.keyPressEater)
 
-        # Crear la entrada de texto para las operaciones matemáticas
-        self.entrada = QLineEdit()
-        self.entrada.returnPressed.connect(self.calcular)
-        layout_horizontal2.addWidget(self.entrada)
-
-        # Agregar el layout horizontal al layout principal
-        layout.addLayout(layout_horizontal2)
+        # Layout para mostrar el total, asegurando que está en el fondo
+        layout_total = QHBoxLayout()
+        self.screenTotal = QLabel("TOTAL: 0.00")
+        self.screenTotal.setStyleSheet("background-color: black; color: white; font-size: 16px; padding: 10px;")
+        layout_total.addWidget(self.screenTotal)
+        layout_total.addStretch(1)
+        layout.addLayout(layout_total)
 
         self.setLayout(layout)
 
-        # Conectar a la base de datos SQLite
+        # Conexión a la base de datos
         self.conexion_db = sqlite3.connect('inventory.db')
         self.cursor = self.conexion_db.cursor()
 
     def mostrar_recomendaciones(self):
         texto_busqueda = self.busqueda_input.text()
-        self.cursor.execute("SELECT name FROM products WHERE name LIKE ?", (f"%{texto_busqueda}%",))
-        producto = self.cursor.fetchone()
+        self.cursor.execute("SELECT name FROM products WHERE name LIKE ?", ('%' + texto_busqueda + '%',))
+        productos = self.cursor.fetchall()
+        if productos:
+            completer = QCompleter([producto[0] for producto in productos])
+            self.busqueda_input.setCompleter(completer)
 
-        if producto:
-            self.producto_encontrado.setText(f"Producto encontrado: {producto[0]}")
-        else:
-            self.producto_encontrado.setText("")
+    def addProduct(self):
+        productName = self.busqueda_input.text().strip()
+        if productName:
+            self.cursor.execute("SELECT name, quantity, price FROM products WHERE name = ?", (productName,))
+            productos = self.cursor.fetchall()
 
-    def calcular(self):
-        expresion = self.entrada.text()
-        resultado = eval(expresion.replace('/', '').replace('*', '').replace('+', '').replace('-', ''))
-        self.pantalla.setText(str(resultado))
+            for row_data in productos:
+                row_number = self.table.rowCount()
+                self.table.insertRow(row_number)  # Inserta una nueva fila en la tabla
+                for column_number, data in enumerate(row_data):
+                    item = QTableWidgetItem(str(data))
+                    self.table.setItem(row_number, column_number, item)
+
+            self.calculateTotal()  # Calcula el total cada vez que se añade un producto nuevo
+
+
+    def calculateTotal(self):
+        total = 0
+        for row in range(self.table.rowCount()):
+            cantidad = int(self.table.item(row, 1).text())
+            precio = float(self.table.item(row, 2).text())
+            total += cantidad * precio
+        self.screenTotal.setText(f"TOTAL: {total:.2f}")
+
+
+
+# Para correr la aplicación
+if __name__ == "__main__":
+    import sys
+    app = QApplication(sys.argv)
+    window = SalesTab()
+    window.show()
+    sys.exit(app.exec_())
