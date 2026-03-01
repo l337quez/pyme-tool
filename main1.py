@@ -1,8 +1,8 @@
 import sys
 import csv
-from PySide2.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QTabWidget
-from PySide2.QtGui import QPixmap
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QTabWidget
+from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
 import sqlite3
 
 # Crear la conexión a la base de datos SQLite

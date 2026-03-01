@@ -1,8 +1,8 @@
 import sys
 import csv
-from PySide2.QtWidgets import QWidget, QComboBox, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QTabWidget, QHBoxLayout, QGridLayout
-from PySide2.QtGui import QPixmap
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QComboBox, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QTabWidget, QHBoxLayout, QGridLayout
+from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
 import sqlite3
 
 # Crear la conexión a la base de datos SQLite
@@ -16,8 +16,22 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS products
 # Crear la tabla de ventas si no existe
 cursor.execute('''CREATE TABLE IF NOT EXISTS sales
                   (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT, buyer TEXT, seller TEXT, discount REAL, currency TEXT,
-                   product_id INTEGER,
+                   product_id INTEGER, quantity INTEGER, payment_method TEXT, status TEXT,
                    FOREIGN KEY (product_id) REFERENCES products (id))''')
+
+# Crear la tabla de vendedores
+cursor.execute('''CREATE TABLE IF NOT EXISTS sellers
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, name TEXT, email TEXT, address TEXT, 
+                   phone TEXT, sector TEXT, cedula TEXT, type TEXT)''')
+
+# Crear la tabla de clientes
+cursor.execute('''CREATE TABLE IF NOT EXISTS clients
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, name TEXT, email TEXT, address TEXT, 
+                   phone TEXT, sector TEXT, cedula TEXT, type TEXT)''')
+
+# Crear la tabla de monedas
+cursor.execute('''CREATE TABLE IF NOT EXISTS currencies
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, symbol TEXT, is_crypto INTEGER DEFAULT 0)''')
 
 connection.commit()
 
@@ -216,4 +230,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
