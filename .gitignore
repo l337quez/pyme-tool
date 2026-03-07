@@ -2,6 +2,8 @@
 
 pyme_tool_data_base.db
 __pycache__
+
+# plugins
 plugins/__pycache__
 plugins/sample_analysis_plugin/__pycache__
 plugins/ejemplo_calculadora/__pycache__

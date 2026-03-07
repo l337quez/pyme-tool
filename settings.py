@@ -1,9 +1,11 @@
 import json
 import os
+import urllib.request
+import webbrowser
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QPushButton, QCheckBox, QFrame, 
                              QMessageBox, QStackedWidget, QComboBox)
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QThread
 from PySide6.QtPrintSupport import QPrinterInfo
 from printers.manager import PrinterManager
 import sqlite3
@@ -345,6 +347,110 @@ class GenericManagementPage(QWidget):
             self.clear_form()
             self.load_data()
 
+class UpdateWorker(QThread):
+    finished = Signal(bool, str, str) # is_available, local_version, remote_version
+
+    def __init__(self, local_version):
+        super().__init__()
+        self.local_version = local_version
+
+    def run(self):
+        try:
+            url = "https://raw.githubusercontent.com/l337quez/pyme-tool/main/version.txt"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                remote_version = response.read().decode('utf-8').strip()
+            
+            is_available = self.local_version != remote_version
+            self.finished.emit(is_available, self.local_version, remote_version)
+        except Exception as e:
+            self.finished.emit(False, self.local_version, f"Error: {e}")
+
+class UpdatePage(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setSpacing(25)
+
+        title = QLabel("Actualización de Software")
+        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
+        layout.addWidget(title)
+
+        descr = QLabel("Verifica si hay nuevas versiones disponibles para tu PYME Tool.")
+        descr.setStyleSheet("color: #7f8c8d; font-size: 13px; border: none; background: transparent;")
+        layout.addWidget(descr)
+
+        form_frame = QFrame()
+        form_frame.setStyleSheet("QFrame { background-color: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 25px; }")
+        form_layout = QVBoxLayout(form_frame)
+
+        self.current_version_label = QLabel(self.get_local_version_text())
+        self.current_version_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #34495e; border: none; background: transparent;")
+        form_layout.addWidget(self.current_version_label)
+
+        self.status_label = QLabel("")
+        self.status_label.setStyleSheet("color: #7f8c8d; margin-top: 10px; border: none; background: transparent;")
+        form_layout.addWidget(self.status_label)
+        
+        layout.addWidget(form_frame)
+
+        self.check_btn = QPushButton("Buscar Actualizaciones")
+        self.check_btn.clicked.connect(self.check_for_updates)
+        self.check_btn.setFixedWidth(250)
+        self.check_btn.setStyleSheet("""
+            QPushButton { background-color: #3498db; color: white; font-weight: bold; padding: 12px; border-radius: 8px; font-size: 14px; }
+            QPushButton:hover { background-color: #2980b9; }
+            QPushButton:disabled { background-color: #bdc3c7; }
+        """)
+        layout.addWidget(self.check_btn)
+        layout.addStretch()
+
+        self.worker = None
+
+    def get_local_version(self):
+        try:
+            if os.path.exists("version.txt"):
+                with open("version.txt", "r", encoding="utf-8") as f:
+                    return f.read().strip()
+        except:
+            pass
+        return "Unknown"
+
+    def get_local_version_text(self):
+        return f"Versión Actual: {self.get_local_version()}"
+
+    def check_for_updates(self):
+        self.check_btn.setEnabled(False)
+        self.status_label.setStyleSheet("color: #3498db; margin-top: 10px; border: none; background: transparent;")
+        self.status_label.setText("Buscando actualizaciones...")
+        
+        local_version = self.get_local_version()
+        self.worker = UpdateWorker(local_version)
+        self.worker.finished.connect(self.on_update_result)
+        self.worker.start()
+
+    def on_update_result(self, is_available, local, remote):
+        self.check_btn.setEnabled(True)
+
+        if remote.startswith("Error:"):
+            self.status_label.setStyleSheet("color: #e74c3c; margin-top: 10px; font-weight: bold; border: none; background: transparent;")
+            self.status_label.setText(f"Error al comprobar la versión.")
+            return
+
+        if is_available:
+            self.status_label.setText("")
+            msg = f"¡Versión {remote} disponible! (Actual: {local})\n\n¿Desea ir a GitHub para descargarla?"
+            reply = QMessageBox.question(self, "Actualización Disponible", msg, 
+                                         QMessageBox.Yes | QMessageBox.No)
+            
+            if reply == QMessageBox.Yes:
+                webbrowser.open("https://github.com/l337quez/pyme-tool")
+        else:
+             self.status_label.setStyleSheet("color: #27ae60; margin-top: 10px; font-weight: bold; border: none; background: transparent;")
+             self.status_label.setText(f"Tu sistema está al día ({local}).")
+
+
 class SettingsTab(QWidget):
     def __init__(self):
         super().__init__()
@@ -371,12 +477,14 @@ class SettingsTab(QWidget):
         self.btn_vendedores = SidebarButton("Vendedores", "👤")
         self.btn_clientes = SidebarButton("Clientes", "🤝")
         self.btn_monedas = SidebarButton("Monedas", "💰")
+        self.btn_actualizar = SidebarButton("Actualizar Software", "🔄")
         
         sidebar_layout.addWidget(self.btn_negocio)
         sidebar_layout.addWidget(self.btn_impresora)
         sidebar_layout.addWidget(self.btn_vendedores)
         sidebar_layout.addWidget(self.btn_clientes)
         sidebar_layout.addWidget(self.btn_monedas)
+        sidebar_layout.addWidget(self.btn_actualizar)
         sidebar_layout.addStretch()
 
         # --- Content Area ---
@@ -409,11 +517,14 @@ class SettingsTab(QWidget):
              ("is_crypto", "Tipo", "", "combo")]
         )
         
+        self.actualizar_page = UpdatePage()
+        
         self.stacked_widget.addWidget(self.business_page)
         self.stacked_widget.addWidget(self.printer_page)
         self.stacked_widget.addWidget(self.vendedores_page)
         self.stacked_widget.addWidget(self.clientes_page)
         self.stacked_widget.addWidget(self.monedas_page)
+        self.stacked_widget.addWidget(self.actualizar_page)
 
         main_layout.addWidget(self.sidebar)
         main_layout.addWidget(self.stacked_widget)
@@ -424,6 +535,7 @@ class SettingsTab(QWidget):
         self.btn_vendedores.clicked.connect(lambda: self.switch_page(2))
         self.btn_clientes.clicked.connect(lambda: self.switch_page(3))
         self.btn_monedas.clicked.connect(lambda: self.switch_page(4))
+        self.btn_actualizar.clicked.connect(lambda: self.switch_page(5))
         
         # Initial State
         self.switch_page(0)
@@ -436,6 +548,7 @@ class SettingsTab(QWidget):
         self.btn_vendedores.setChecked(index == 2)
         self.btn_clientes.setChecked(index == 3)
         self.btn_monedas.setChecked(index == 4)
+        self.btn_actualizar.setChecked(index == 5)
 
     def load_all_data(self):
         if os.path.exists(self.settings_path):

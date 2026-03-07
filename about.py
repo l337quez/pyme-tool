@@ -51,7 +51,7 @@ class AboutTab(QWidget):
 
         info_data = [
             "Version: v0.1.9 Beta",
-            "License: GPL V3",
+            "License: BSD V3"
             "Packaged: Ronal Forero",
             "Translated: Ronal Forero",
             "Tested: Ronal Forero",
