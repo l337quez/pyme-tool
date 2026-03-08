@@ -181,19 +181,26 @@ class MainWindow(QMainWindow):
             else:
                 plugin.on_deactivated()
 
-        # ...
-        # Set the icon
-        app.setWindowIcon(QIcon('assets/pyme-tools-logo.png'))
-
     # ...
 
 # ...
 
 # Inicializar la aplicación de PySide
+import ctypes
+try:
+    myappid = 'l337quez.pymetool.pos.1'
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except Exception:
+    pass
+
 app = QApplication(sys.argv)
 
 # Crear la ventana principal
 window = MainWindow()
+
+from utils import get_resource_path
+window.setWindowIcon(QIcon(get_resource_path('assets/app/pyme-tools-logo.png')))
+
 window.show()
 
 # Ejecutar la aplicación

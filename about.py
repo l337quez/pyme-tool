@@ -19,7 +19,7 @@ class AboutTab(QWidget):
         self.logo_label = QLabel()
         self.logo_label.setFixedSize(120, 120)
         self.logo_label.setAlignment(Qt.AlignCenter)
-        pixmap = QPixmap('assets/pyme-tools-logo.png')
+        pixmap = QPixmap('assets/app/pyme-tools-logo.png')
         if not pixmap.isNull():
             self.logo_label.setPixmap(pixmap.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         else:
@@ -51,7 +51,7 @@ class AboutTab(QWidget):
 
         info_data = [
             "Version: v0.1.9 Beta",
-            "License: BSD V3"
+            "License: BSD V3",
             "Packaged: Ronal Forero",
             "Translated: Ronal Forero",
             "Tested: Ronal Forero",

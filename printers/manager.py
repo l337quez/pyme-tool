@@ -5,24 +5,22 @@ from .base import BasePrinter
 
 class PrinterManager:
     """
-    Gestiona la carga dinámica de drivers desde la carpeta printers/
+    Gestiona la carga de drivers
     """
     
     @staticmethod
     def get_available_drivers():
         drivers = {}
-        printers_dir = os.path.dirname(__file__)
-        
-        for filename in os.listdir(printers_dir):
-            if filename.endswith(".py") and filename not in ["base.py", "manager.py", "__init__.py"]:
-                module_name = f"printers.{filename[:-3]}"
-                try:
-                    module = importlib.import_module(module_name)
-                    for name, obj in inspect.getmembers(module):
-                        if inspect.isclass(obj) and issubclass(obj, BasePrinter) and obj is not BasePrinter:
-                            drivers[filename[:-3]] = obj
-                except Exception as e:
-                    print(f"Error cargando driver {filename}: {e}")
+        try:
+            from . import goojprt
+            driver_modules = {'goojprt': goojprt}
+            
+            for filename, module in driver_modules.items():
+                for name, obj in inspect.getmembers(module):
+                    if inspect.isclass(obj) and issubclass(obj, BasePrinter) and obj is not BasePrinter:
+                        drivers[filename] = obj
+        except Exception as e:
+            print(f"Error cargando drivers: {e}")
         
         return drivers
 
